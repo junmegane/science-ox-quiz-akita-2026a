@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>理科 ○× クイズ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: sans-serif; background:#f4f6f8; text-align:center; margin:0; }
+.card { background:#fff; padding:24px; margin:20px auto; max-width:640px; border-radius:12px; }
+button { font-size:20px; padding:12px 32px; margin:10px; }
+#result { font-size:20px; margin-top:10px; }
+#explanation { margin-top:12px; color:#333; }
+</style>
+</head>
+<body>
+<div class="card" id="game"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+let allQuestions = [];
+let questions = [];
+let current = 0;
+let score = 0;
+let answered = false;
+
+Papa.parse("questions.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function(results) {
+    allQuestions = results.data.map(row => ({
+      q: row["問題文"],
+      a: row["正解"] === "○",
+      e: row["解説"] || ""
+    }));
+    startGame();
+  },
+  error: function() {
+    document.getElementById("game").innerHTML = "<p>読み込みに失敗しました</p>";
+  }
+});
+
+function startGame() {
+  current = 0;
+  score = 0;
+  answered = false;
+  questions = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, 10);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  document.getElementById("game").innerHTML = `
+    <h2>第 ${current + 1} 問 / 10</h2>
+    <h3>${questions[current].q}</h3>
+    <button onclick="answer(true)">○</button>
+    <button onclick="answer(false)">×</button>
+    <div id="result"></div>
+    <div id="explanation"></div>
+  `;
+}
+
+function answer(choice) {
+  if (answered) return;
+  answered = true;
+
+  if (choice === questions[current].a) {
+    document.getElementById("result").textContent = "⭕ 正解";
+    score++;
+  } else {
+    document.getElementById("result").textContent = "❌ 不正解";
+  }
+
+  document.getElementById("explanation").textContent = questions[current].e;
+
+  document.getElementById("game").innerHTML += `
+    <button onclick="next()">➡ 次の問題へ</button>
+  `;
+}
+
+function next() {
+  current++;
+  if (current < 10) {
+    renderQuestion();
+  } else {
+    document.getElementById("game").innerHTML = `
+      <h2>終了！</h2>
+      <p>得点：${score} / 10</p>
+      <button onclick="startGame()">🔁 もう一度挑戦</button>
+    `;
+  }
+}
+</script>
+</body>
+</html>
